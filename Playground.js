@@ -1,7 +1,14 @@
 class Playground{
     constructor(){
         this.simulation = new Simulation();
-        this.mousePos = Vector2.Zero();
+
+        // Until the user moves the mouse, keep the emitter fixed at 960,200.
+        this.mousePos = new Vector2(960, 200);
+        this.hasMouseMoved = false;
+
+        // Initialize emitter at the same default position.
+        this.simulation.emitter.position = this.mousePos.Cpy();
+
         this.lastMousePos = Vector2.Zero();
         //this.selectedShape = null;
         this.showDebugInfo = false;
@@ -34,6 +41,14 @@ class Playground{
     }
 
     updateEmitterPosition(){
+        // Until the user moves the mouse, lock the emitter at 960,200.
+        // This prevents it from easing toward (0,0) on startup.
+        if(!this.hasMouseMoved){
+            this.simulation.emitter.position.x = 960;
+            this.simulation.emitter.position.y = 200;
+            return;
+        }
+
         this.stepsMove = 20;
         this.emitterX = this.simulation.emitter.position.x;
         this.emitterY = this.simulation.emitter.position.y;
@@ -62,7 +77,7 @@ class Playground{
         
         ctx.save();
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        ctx.fillRect(10, 10, 300, 120);
+        ctx.fillRect(10, 10, 340, 120);
         
         ctx.fillStyle = "white";
         ctx.font = "16px Arial";
@@ -72,11 +87,15 @@ class Playground{
         ctx.fillText(`Emitter X: ${Math.round(emitterPos.x)}`, 20, 35);
         ctx.fillText(`Emitter Y: ${Math.round(emitterPos.y)}`, 20, 60);
         ctx.fillText(`Time: ${this.elapsedTime.toFixed(2)}s`, 20, 85);
-        ctx.fillText(`FPS: ${this.fps}`, 20, 110);
+        ctx.fillText(`FPS: ${this.fps} | Particles: ${this.simulation.particles.length}`, 20, 110);
         
         ctx.restore();
     }
     onMouseMove(position){
+        if(!this.hasMouseMoved){
+            this.hasMouseMoved = true;
+        }
+
         this.mousePos = position;
     }
 

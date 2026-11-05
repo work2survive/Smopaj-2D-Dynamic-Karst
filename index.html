@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SMOPAJ Caves - 2D Fluid Simulation</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                padding: 0;
+                margin: 0;
+            }
+            html, body {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background-color: #1a1a1a;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            canvas {
+                display: block;
+                max-width: 100vw;
+                max-height: 100vh;
+                aspect-ratio: 16 / 9;
+                object-fit: contain;
+                touch-action: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script src="Playground.js"></script>
+        <script src="Simulation.js"></script>
+        <script src="Vector2.js"></script>
+        <script src="DrawUtils.js"></script>
+        <script src="Particle.js"></script>
+        <script src="FluidHashGrid.js"></script>
+        <script src="ParticleEmitter.js"></script>
+        <script src="Spring.js"></script>
+        <script src="shapes/Shape.js"></script>
+        <script src="shapes/Polygon.js"></script>
+        <script src="shapes/Circle.js"></script>
+
+        <script>
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+
+            var background = new Image();
+            background.src = "img/background.jpg";
+
+            var foreground = new Image();
+            foreground.src = "img/foreground.png";
+
+            let showForeground = true;
+
+            // Cloud image offset variables
+            let cloudOffsetX = -30;   // horizontal offset from emitter center
+            let cloudOffsetY = 10;  // vertical offset from emitter center
+
+            // Particle color randomization
+            let randomizeColor = true;  // set to true to randomize particle colors
+            let color1 = "#39ccb8ff";  // first color (teal)
+            let color2 = "#39cc99ff";  // second color (pink)
+
+            let lastTime = performance.now();
+            let currentTime = 0;
+            let deltaTime = 0;
+
+            let playground = new Playground();
+            // Apply cloud offset variables to emitter
+            playground.simulation.emitter.cloudOffsetX = cloudOffsetX;
+            playground.simulation.emitter.cloudOffsetY = cloudOffsetY;
+            // Apply color randomization config
+            playground.simulation.randomizeColor = randomizeColor;
+            playground.simulation.color1 = color1;
+            playground.simulation.color2 = color2;
+            let fadeAlpha = 1.0; // Start fully black
+            const FADE_DURATION = 3; // 3 seconds to fade in/out
+            let fadeStartTime = performance.now();
+            let fadeState = 'in'; // 'in' for fading in at start, 'out' for fading out before restart
+
+            let lastMouseActivityTime = performance.now();
+            const MOUSE_INACTIVITY_THRESHOLD = 60000; // 60 seconds in milliseconds of inactivity before reload
+            let inactivityTimerId = null;
+
+            mainLoop();
+
+            function updatePlayground(dt){
+                Clear();
+                playground.update(dt);
+                playground.draw();
+                drawForeground();
+                drawFadeOverlay();
+            }
+
+            function mainLoop(){
+                window.requestAnimationFrame(mainLoop);
+
+                currentTime = performance.now();
+                deltaTime = (currentTime - lastTime) / 1000;
+
+                updatePlayground(deltaTime);
+                lastTime = currentTime;
+            }
+
+            function Clear(){
+                if (background.complete && background.naturalHeight !== 0) {
+                    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.fillStyle = "#111111";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            function drawForeground(){
+                if (showForeground && foreground.complete && foreground.naturalHeight !== 0) {
+                    ctx.drawImage(foreground, 0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            function drawFadeOverlay(){
+                let elapsedTime = (performance.now() - fadeStartTime) / 1000;
+                
+                if(fadeState === 'in'){
+                    // Fading in: alpha goes from 1 to 0
+                    fadeAlpha = Math.max(0, 1 - (elapsedTime / FADE_DURATION));
+                } else if(fadeState === 'out'){
+                    // Fading out: alpha goes from 0 to 1
+                    fadeAlpha = Math.min(1, elapsedTime / FADE_DURATION);
+                    
+                    // When fade is complete, reload the page
+                    if(fadeAlpha >= 1 && !window.pageReloaded){
+                        window.pageReloaded = true;
+                        location.reload();
+                    }
+                }
+                
+                if(fadeAlpha > 0){
+                    ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            function getMousePos(canvas, evt){
+                var rect = canvas.getBoundingClientRect();
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                return {
+                    x: (evt.clientX - rect.left) * scaleX,
+                    y: (evt.clientY - rect.top) * scaleY
+                };
+            }
+
+            function getTouchPos(canvas, evt){
+                var rect = canvas.getBoundingClientRect();
+                var touch = evt.touches[0] || evt.changedTouches[0];
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                return {
+                    x: (touch.clientX - rect.left) * scaleX,
+                    y: (touch.clientY - rect.top) * scaleY
+                };
+            }
+
+            function resetInactivityTimer(){
+                lastMouseActivityTime = performance.now();
+                
+                if(inactivityTimerId !== null){
+                    clearTimeout(inactivityTimerId);
+                }
+                
+                inactivityTimerId = setTimeout(function(){
+                    fadeState = 'out'; // Fade to black before reload
+                    fadeStartTime = performance.now();
+                    window.pageReloaded = false;
+                }, MOUSE_INACTIVITY_THRESHOLD);
+            }
+
+            canvas.addEventListener('mousemove', function(evt){
+                let mouse = getMousePos(canvas, evt);
+                playground.onMouseMove(new Vector2(mouse.x, mouse.y));
+                resetInactivityTimer();
+            }, false);
+
+            canvas.addEventListener('mousedown', function(evt){
+                playground.onMouseDown(evt.button);
+                resetInactivityTimer();
+            }, false);
+
+            canvas.addEventListener('mouseup', function(evt){
+                playground.onMouseUp(evt.button);
+                resetInactivityTimer();
+            }, false);
+
+            canvas.addEventListener('touchstart', function(evt){
+                evt.preventDefault();
+                let touch = getTouchPos(canvas, evt);
+                playground.onMouseMove(new Vector2(touch.x, touch.y));
+                playground.onMouseDown(0);
+                resetInactivityTimer();
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', function(evt){
+                evt.preventDefault();
+                let touch = getTouchPos(canvas, evt);
+                playground.onMouseMove(new Vector2(touch.x, touch.y));
+                resetInactivityTimer();
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', function(evt){
+                evt.preventDefault();
+                playground.onMouseUp(0);
+                resetInactivityTimer();
+            }, { passive: false });
+
+            document.addEventListener('keydown', function(evt){
+                if (evt.key === 'f' || evt.key === 'F') {
+                    showForeground = !showForeground;
+                } else if (evt.key === 'g' || evt.key === 'G') {
+                    playground.simulation.showShapes = !playground.simulation.showShapes;
+                } else if (evt.key === 'd' || evt.key === 'D') {
+                    playground.toggleDebugInfo();
+                }
+            }, false);
+        </script>
+    </body>
+</html>

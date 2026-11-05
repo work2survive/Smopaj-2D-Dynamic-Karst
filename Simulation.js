@@ -72,32 +72,44 @@ class Simulation{
                 
        let polygonV5 = new Polygon([
             new Vector2(630,530), 
-            new Vector2(950,600),
+            new Vector2(1026,570),
             new Vector2(1100,660),
             new Vector2(790,660)],"orange");
 
        let polygonV6 = new Polygon([
-            new Vector2(945,600), 
-            new Vector2(1040,580),
-            new Vector2(1480,730),
+            new Vector2(1030,565), 
+            new Vector2(1330,500),
+            new Vector2(1444,686),
             new Vector2(1155,680)],"yellow");
 
-       let polygonV7 = new Polygon([
-            new Vector2(1155,680),
-            new Vector2(1480,730),
-            new Vector2(1280,810),
-            new Vector2(1170,730)],"green");
+       let polygonV7 = new Polygon([ 
+            new Vector2(1226,705),
+            new Vector2(1450,720),
+            new Vector2(1280,760),
+            new Vector2(1240,750)],"green");
+
+       let polygonV21 = new Polygon([ 
+            new Vector2(963,690),
+            new Vector2(1220,696),
+            new Vector2(1220,740),
+            new Vector2(1010,715)],"white");
+
+       let polygonV22 = new Polygon([
+            new Vector2(1430,730),
+            new Vector2(1460,710),
+            new Vector2(1460,740),
+            new Vector2(1450,740)],"grey");            
 
        let polygonV8 = new Polygon([
-            new Vector2(1480,730),
-            new Vector2(1670,710),
+            new Vector2(1380,750),
+            new Vector2(1670,800),
             new Vector2(1600,890),
             new Vector2(1400,790)],"aqua");
           
        let polygonV9 = new Polygon([
-            new Vector2(1660,710),
-            new Vector2(2000,660),
-            new Vector2(2000,1300),
+            new Vector2(1660,850),
+            new Vector2(1900,930),
+            new Vector2(1900,1300),
             new Vector2(1460,1300)],"red");
 
        let polygonV10 = new Polygon([
@@ -130,14 +142,14 @@ class Simulation{
             new Vector2(450,850)],"blue");
             
        let polygonV15 = new Polygon([
-            new Vector2(1070,920),
-            new Vector2(1920,1080),
+            new Vector2(1070,980),
+            new Vector2(1900,1080),
             new Vector2(600,1080)],"pink");
 
        let polygonV16 = new Polygon([
             new Vector2(1610,860),
             new Vector2(1580,1030),
-            new Vector2(1240,960)],"blue");         
+            new Vector2(1240,1060)],"blue");         
     
        let polygonV17 = new Polygon([
             new Vector2(720,680),
@@ -184,6 +196,8 @@ class Simulation{
         this.shapes.push(polygonV18);        
         this.shapes.push(polygonV19);
         this.shapes.push(polygonV20);
+        this.shapes.push(polygonV21);
+        this.shapes.push(polygonV22);
 
 
     }
@@ -449,27 +463,14 @@ class Simulation{
     }
 
     worldBoundary(){
-        for(let i=0; i< this.particles.length; i++){
+        // Remove particles that leave the visible canvas bounds so they disappear forever.
+        // Iterate backwards to safely splice while iterating.
+        for(let i = this.particles.length - 1; i >= 0; i--){
             let pos = this.particles[i].position;
 
-            if(pos.x < 0){
-                this.particles[i].position.x = 0;
-                this.particles[i].prevPosition.x = 0;
+            if(pos.x < 0 || pos.y < 0 || pos.x > canvas.width || pos.y > canvas.height){
+                this.particles.splice(i, 1);
             }
-            if(pos.y < 0){
-                this.particles[i].position.y = 0;
-                this.particles[i].prevPosition.y = 0;
-            }
-            if(pos.x > canvas.width){
-                this.particles[i].position.x = canvas.width-1;
-                this.particles[i].prevPosition.x = canvas.width-1;
-            }
-            
-            if(pos.y > canvas.height){ //bottom boundary
-                this.particles[i].position.y = canvas.height-1;
-                this.particles[i].prevPosition.y = canvas.height-1;
-            }
-                
         }
     }
 

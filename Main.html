@@ -1,15 +1,37 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
-        <title>2D Fluid Simulation</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SMOPAJ Caves - 2D Fluid Simulation</title>
         <style>
-            * {padding: 0; margin: 0;}
-            canvas { display: block; margin: 0px;}
-            body {background-color: #333333;}
+            * {
+                box-sizing: border-box;
+                padding: 0;
+                margin: 0;
+            }
+            html, body {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background-color: #1a1a1a;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            canvas {
+                display: block;
+                max-width: 100vw;
+                max-height: 100vh;
+                aspect-ratio: 16 / 9;
+                object-fit: contain;
+                touch-action: none;
+            }
         </style>
     </head>
 
     <body>
-        <canvas id="canvas" width="1920px" height="1080px" style="border: solid 0px red; margin: 0;"; ></canvas>
+        <canvas id="canvas" width="1920" height="1080"></canvas>
         <script src="Playground.js"></script>
         <script src="Simulation.js"></script>
         <script src="Vector2.js"></script>
@@ -61,7 +83,7 @@
             let fadeState = 'in'; // 'in' for fading in at start, 'out' for fading out before restart
 
             let lastMouseActivityTime = performance.now();
-            const MOUSE_INACTIVITY_THRESHOLD = 60000; // 30 seconds in milliseconds, of mouse inactivity before reload
+            const MOUSE_INACTIVITY_THRESHOLD = 60000; // 60 seconds in milliseconds of inactivity before reload
             let inactivityTimerId = null;
 
             mainLoop();
@@ -124,9 +146,22 @@
 
             function getMousePos(canvas, evt){
                 var rect = canvas.getBoundingClientRect();
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
                 return {
-                    x: evt.clientX - rect.left,
-                    y: evt.clientY - rect.top
+                    x: (evt.clientX - rect.left) * scaleX,
+                    y: (evt.clientY - rect.top) * scaleY
+                };
+            }
+
+            function getTouchPos(canvas, evt){
+                var rect = canvas.getBoundingClientRect();
+                var touch = evt.touches[0] || evt.changedTouches[0];
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                return {
+                    x: (touch.clientX - rect.left) * scaleX,
+                    y: (touch.clientY - rect.top) * scaleY
                 };
             }
 
@@ -145,20 +180,41 @@
             }
 
             canvas.addEventListener('mousemove', function(evt){
-                let mouse = getMousePos(canvas,evt);
-                playground.onMouseMove(new Vector2(mouse.x,mouse.y));
+                let mouse = getMousePos(canvas, evt);
+                playground.onMouseMove(new Vector2(mouse.x, mouse.y));
                 resetInactivityTimer();
-            }, false)
+            }, false);
 
             canvas.addEventListener('mousedown', function(evt){
                 playground.onMouseDown(evt.button);
                 resetInactivityTimer();
-            }, false)
+            }, false);
 
             canvas.addEventListener('mouseup', function(evt){
                 playground.onMouseUp(evt.button);
                 resetInactivityTimer();
-            }, false)
+            }, false);
+
+            canvas.addEventListener('touchstart', function(evt){
+                evt.preventDefault();
+                let touch = getTouchPos(canvas, evt);
+                playground.onMouseMove(new Vector2(touch.x, touch.y));
+                playground.onMouseDown(0);
+                resetInactivityTimer();
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', function(evt){
+                evt.preventDefault();
+                let touch = getTouchPos(canvas, evt);
+                playground.onMouseMove(new Vector2(touch.x, touch.y));
+                resetInactivityTimer();
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', function(evt){
+                evt.preventDefault();
+                playground.onMouseUp(0);
+                resetInactivityTimer();
+            }, { passive: false });
 
             document.addEventListener('keydown', function(evt){
                 if (evt.key === 'f' || evt.key === 'F') {
@@ -168,18 +224,7 @@
                 } else if (evt.key === 'd' || evt.key === 'D') {
                     playground.toggleDebugInfo();
                 }
-            }, false)
-
-   
+            }, false);
         </script>
-
-
     </body>
-    
-
-
-
-
-
-
 </html>
