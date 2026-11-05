@@ -1,8 +1,8 @@
-# SMOPAJ Caves - Interactive Karst Fluid Simulation
+# Smopaj 2D Dynamic Karst - Interactive Cave Fluid Simulation
 
 An interactive 2D viscoelastic fluid simulation running on a museum touchscreen installation designed for kids and young visitors to explore how rainwater filters through limestone, sculpts underground cavern systems, and creates unique subterranean hydrological features.
 
-🌐 **Live Demo (GitHub Pages):** [https://work2survive.github.io/smopajcaves/](https://work2survive.github.io/smopajcaves/)
+🌐 **Live Demo (GitHub Pages):** [https://work2survive.github.io/Smopaj-2D-Dynamic-Karst/](https://work2survive.github.io/Smopaj-2D-Dynamic-Karst/)
 
 ---
 
